@@ -367,6 +367,8 @@ async function openReader(file) {
     reader.task = task;
     reader.page = 1;
     reader.zoom = 0;
+    // 缩放百分比以「适应窗口」为100% 基准
+    reader.fitScale = 1;
     document.querySelector("#reader-total").textContent = String(doc.numPages);
     document.querySelector("#reader-page-input").max = String(doc.numPages);
     document.querySelector("#reader-meta").textContent = `${formatBytes(file.size)} · ${doc.numPages} 页`;
@@ -377,25 +379,40 @@ async function openReader(file) {
 }
 
 async function renderReaderPage() {
-  if (!reader.doc || reader.rendering) return;
+  if (!reader.doc) return;
+  // 渲染进行中时不要丢弃翻页请求，而是等当前这页画完后再画目标页，
+  // 否则快速连点会出现"画面变了但页码没动"的错位。
+  if (reader.rendering) {
+    reader.pendingRender = true;
+    return;
+  }
   reader.rendering = true;
   try {
-    const page = await reader.doc.getPage(reader.page);
-    const base = page.getViewport({ scale: 1 });
-    const fit = Math.min((window.innerWidth - 80) / base.width, (window.innerHeight - 190) / base.height, 2);
-    const scale = reader.zoom || fit;
-    const viewport = page.getViewport({ scale });
-    const canvas = document.querySelector("#reader-canvas");
-    canvas.width = Math.floor(viewport.width);
-    canvas.height = Math.floor(viewport.height);
-    const context = canvas.getContext("2d");
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvasContext: context, viewport }).promise;
-    document.querySelector("#reader-zoom-label").textContent = reader.zoom
-      ? `${Math.round((scale / base.width) * 72)}%`
-      : "适应";
-    document.querySelector("#reader-page-input").value = String(reader.page);
+    do {
+      reader.pendingRender = false;
+      const target = reader.page;
+      const page = await reader.doc.getPage(target);
+      const base = page.getViewport({ scale: 1 });
+      const fit = Math.min((window.innerWidth - 80) / base.width, (window.innerHeight - 190) / base.height, 2);
+      // 记录「适应窗口」的缩放值作为百分比基准
+      reader.fitScale = fit;
+      const scale = reader.zoom || fit;
+      const viewport = page.getViewport({ scale });
+      const canvas = document.querySelector("#reader-canvas");
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: context, viewport }).promise;
+      // 缩放标签：相对页面原始尺寸的百分比（scale=1即 100%）
+      if (target === reader.page) {
+        document.querySelector("#reader-zoom-label").textContent = reader.zoom
+          ? `${Math.round((scale / reader.fitScale) * 100)}%`
+          : "适应";
+        document.querySelector("#reader-page-input").value = String(target);
+      }
+    } while (reader.pendingRender);
   } catch (error) {
     showToast(normalizeError(error), true);
   } finally {
@@ -509,11 +526,11 @@ document.querySelector("#reader-page-input").addEventListener("change", (event) 
   }
 });
 document.querySelector("#reader-zoom-in").addEventListener("click", () => {
-  reader.zoom = Math.min(4, (reader.zoom || 1.4) * 1.25);
+  reader.zoom = Math.min(4, (reader.zoom || reader.fitScale || 1) * 1.25);
   renderReaderPage();
 });
 document.querySelector("#reader-zoom-out").addEventListener("click", () => {
-  reader.zoom = Math.max(0.3, (reader.zoom || 1.4) / 1.25);
+  reader.zoom = Math.max(0.3, (reader.zoom || reader.fitScale || 1) / 1.25);
   renderReaderPage();
 });
 document.addEventListener("keydown", (event) => {
