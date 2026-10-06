@@ -4,17 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f7f5ef" />
-  <meta name="description" content="轻页 PDF 是一个免费、免注册、文件不上传的在线 PDF 工具箱，支持合并、拆分、压缩、旋转、加水印、PDF 转图片和图片转 PDF。" />
-  <meta name="keywords" content="PDF工具,合并PDF,拆分PDF,压缩PDF,PDF转图片,图片转PDF,PDF加水印,在线PDF工具" />
+  <meta name="description" content="轻页 PDF 是免费、免注册、文件不上传的在线 PDF 工具箱，27 个工具覆盖合并拆分压缩加密水印页码裁剪 OCR 转换等，全部在浏览器本地完成。" />
+  <meta name="keywords" content="PDF工具,合并PDF,拆分PDF,压缩PDF,PDF加密,PDF解密,PDF加水印,PDF添加页码,PDF裁剪,PDF转图片,图片转PDF,OCR,在线PDF工具" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="zh_CN" />
-  <meta property="og:title" content="轻页 PDF｜文件不上传的在线 PDF 工具箱" />
-  <meta property="og:description" content="在浏览器本地完成常用 PDF 处理。免费、免注册，文件不离开你的设备。" />
+  <meta property="og:title" content="轻页 PDF｜27 个文件不上传的在线 PDF 工具" />
+  <meta property="og:description" content="合并、拆分、压缩、加密、水印、页码、裁剪、OCR、格式转换，全部在浏览器本地完成。免费、免注册。" />
   <meta property="og:url" content="https://qingye-pdf-tools.app.workbuddy.host/" />
   <link rel="canonical" href="https://qingye-pdf-tools.app.workbuddy.host/" />
-  <title>轻页 PDF｜文件不上传的在线 PDF 工具箱</title>
+  <title>轻页 PDF｜27 个文件不上传的在线 PDF 工具箱</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23e6572f'/%3E%3Cpath d='M20 14h17l9 9v27H20z' fill='white'/%3E%3Cpath d='M37 14v10h9' fill='none' stroke='%23e6572f' stroke-width='3'/%3E%3Cpath d='M26 34h14M26 41h10' stroke='%23e6572f' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./styles.css" />
+  <!-- 依赖全部本地化，提前并行拉取首屏必需的 pdf-lib 与 JSZip -->
+  <link rel="modulepreload" href="./vendor/pdf-lib.min.mjs" />
+  <link rel="modulepreload" href="./vendor/jszip.min.mjs" />
+  <link rel="modulepreload" href="./lib/deps.js" />
+  <link rel="modulepreload" href="./lib/registry.js" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -24,12 +29,44 @@
     "operatingSystem": "Web",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
     "codeRepository": "https://github.com/linluo2012/qingye-pdf-tools",
-    "description": "文件不上传、在浏览器本地运行的在线 PDF 工具箱。"
+    "description": "文件不上传、在浏览器本地运行的在线 PDF 工具箱，包含 27 个工具。"
   }
   </script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <g id="i-merge"><rect x="3" y="4" width="10" height="13" rx="1.5"/><rect x="11" y="7" width="10" height="13" rx="1.5" fill="var(--tile-bg, #1d211f)"/></g>
+      <g id="i-split"><path d="M12 3v18"/><rect x="3" y="5" width="6" height="14" rx="1"/><rect x="15" y="5" width="6" height="14" rx="1"/></g>
+      <g id="i-organize"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></g>
+      <g id="i-rotate"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3v5h-5"/></g>
+      <g id="i-nup"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M12 3v18M3 12h18"/></g>
+      <g id="i-long"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="6" y="12" width="12" height="8" rx="1"/><path d="M10 22h4"/></g>
+      <g id="i-page-size"><rect x="3" y="5" width="12" height="14" rx="1.5"/><path d="M17 8h4v11h-4" stroke-dasharray="2 2"/></g>
+      <g id="i-watermark"><path d="M4 7h16M4 12h11M4 17h7"/><circle cx="17" cy="16" r="4"/></g>
+      <g id="i-page-number"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8"/><text x="12" y="18.5" font-size="6" text-anchor="middle" fill="currentColor" stroke="none">1</text></g>
+      <g id="i-crop"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/></g>
+      <g id="i-grayscale"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></g>
+      <g id="i-invert"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></g>
+      <g id="i-background"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 16l5-5 4 4 3-3 6 6"/></g>
+      <g id="i-image"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></g>
+      <g id="i-photo"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 16l4.5-4.5 3.5 3.5 3-3L21 17"/><circle cx="8" cy="9.5" r="1.4"/></g>
+      <g id="i-extract-image"><rect x="3" y="3" width="12" height="14" rx="1.5"/><path d="M8 21h13V8"/><circle cx="7" cy="7.5" r="1.4"/></g>
+      <g id="i-extract-text"><path d="M4 5h16M4 10h16M4 15h10"/></g>
+      <g id="i-reader"><path d="M12 6.5S9.5 4 4 4v14c5.5 0 8 2.5 8 2.5s2.5-2.5 8-2.5V4c-5.5 0-8 2.5-8 2.5z"/><path d="M12 6.5v14"/></g>
+      <g id="i-compress"><path d="M12 3v6M12 21v-6"/><rect x="4" y="9" width="16" height="6" rx="1.5"/><path d="M7 12h10" stroke-dasharray="2 2"/></g>
+      <g id="i-encrypt"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></g>
+      <g id="i-decrypt"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></g>
+      <g id="i-metadata"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9h10M7 13h10M7 17h5"/></g>
+      <g id="i-permissions"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M9 12l2 2 4-4"/></g>
+      <g id="i-delete-blank"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h4"/></g>
+      <g id="i-zip"><path d="M4 6h5l1.5 2H20v11H4z"/><path d="M11 10v2M11 14v2"/></g>
+      <g id="i-ocr"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/><path d="M8 12h8"/></g>
+    </defs>
+  </svg>
+
   <header class="site-header">
     <div class="container nav-wrap">
       <a class="brand" href="#top" aria-label="轻页 PDF 首页">
@@ -49,16 +86,16 @@
     <section class="hero" id="top">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow"><span class="status-dot"></span> 浏览器本地处理 · 文件不上传</div>
+          <div class="eyebrow"><span class="status-dot"></span> 27 个工具 · 浏览器本地处理</div>
           <h1>PDF 处理，<br /><span>轻一点。</span></h1>
-          <p class="hero-lead">合并、拆分、压缩与转换，不用注册，不用等待上传。所有处理都在你的浏览器里完成。</p>
+          <p class="hero-lead">合并拆分、压缩加密、水印页码、裁剪转换、OCR 识别，全部在浏览器里完成。不用注册，不用上传，不用排队。</p>
           <div class="hero-actions">
-            <button class="button button-primary" type="button" data-open-tool="merge">选择一个工具</button>
-            <a class="button button-ghost" href="#tools">查看全部 7 个工具</a>
+            <button class="button button-primary" type="button" data-open-tool="merge">立即使用</button>
+            <a class="button button-ghost" href="#tools">浏览全部工具</a>
           </div>
           <ul class="trust-list" aria-label="产品特点">
             <li><span>01</span> 本地计算</li>
-            <li><span>02</span> 免费使用</li>
+            <li><span>02</span> 完全免费</li>
             <li><span>03</span> 无需登录</li>
           </ul>
         </div>
@@ -73,7 +110,7 @@
             <div class="doc-card doc-mid"><span>报价单.pdf</span><small>2.1 MB</small></div>
             <div class="doc-card doc-front">
               <div class="doc-icon">PDF</div>
-              <div><strong>合并后的文件.pdf</strong><small>正在浏览器中生成</small></div>
+              <div><strong>处理结果.pdf</strong><small>正在浏览器中生成</small></div>
               <span class="doc-check">完成</span>
             </div>
           </div>
@@ -90,68 +127,222 @@
         <div class="section-head">
           <div>
             <span class="section-index">01 / TOOLS</span>
-            <h2>常用功能，打开就能用</h2>
+            <h2>27 个工具，打开就能用</h2>
           </div>
-          <p>先把最高频、最适合浏览器本地完成的 PDF 任务做好。每个工具都有明确的格式提示与处理进度。</p>
+          <p>覆盖日常最高频的 PDF 任务。可以按分类浏览，也可以直接搜索你要做的事。</p>
         </div>
 
-        <div class="tool-grid">
-          <button class="tool-card featured" type="button" data-open-tool="merge">
+        <div class="tool-finder">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input id="tool-search" type="search" placeholder="搜索工具，例如：加水印、压缩、转图片" aria-label="搜索工具" autocomplete="off" />
+          </div>
+          <div class="chip-row" role="group" aria-label="工具分类筛选">
+            <button class="chip is-active" type="button" data-filter="all">全部</button>
+            <button class="chip" type="button" data-filter="organize">组织管理</button>
+            <button class="chip" type="button" data-filter="edit">编辑修改</button>
+            <button class="chip" type="button" data-filter="convert">格式转换</button>
+            <button class="chip" type="button" data-filter="secure">安全优化</button>
+            <button class="chip" type="button" data-filter="cleanup">清理修复</button>
+          </div>
+        </div>
+
+        <div class="tool-grid" id="tool-grid">
+          <button class="tool-card featured" type="button" data-open-tool="merge" data-group="organize" data-name="合并 PDF 拼接 合成">
             <span class="tool-no">01</span>
-            <span class="tool-icon icon-merge" aria-hidden="true"><i></i><i></i></span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-merge"/></svg>
             <strong>合并 PDF</strong>
             <small>多个 PDF 按顺序合成一个文件</small>
             <span class="tool-link">立即使用 <b>→</b></span>
           </button>
-          <button class="tool-card" type="button" data-open-tool="split">
+          <button class="tool-card" type="button" data-open-tool="split" data-group="organize" data-name="拆分 PDF 提取页 分页 切分">
             <span class="tool-no">02</span>
-            <span class="tool-icon icon-split" aria-hidden="true"><i></i><i></i></span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-split"/></svg>
             <strong>拆分 / 提取</strong>
-            <small>按页码提取，或逐页打包下载</small>
+            <small>按页码提取，或逐页拆成独立文件</small>
             <span class="tool-link">立即使用 <b>→</b></span>
           </button>
-          <button class="tool-card" type="button" data-open-tool="compress">
+          <button class="tool-card" type="button" data-open-tool="organize" data-group="organize" data-name="页面管理 删除 重排 顺序 反转 空白页">
             <span class="tool-no">03</span>
-            <span class="tool-icon icon-compress" aria-hidden="true"><i></i></span>
-            <strong>压缩 PDF</strong>
-            <small>将页面重新编码，减小扫描件体积</small>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-organize"/></svg>
+            <strong>页面管理</strong>
+            <small>缩略图拖拽排序、删除、旋转页面</small>
             <span class="tool-link">立即使用 <b>→</b></span>
           </button>
-          <button class="tool-card" type="button" data-open-tool="rotate">
+          <button class="tool-card" type="button" data-open-tool="rotate" data-group="organize" data-name="旋转 PDF 转向 90度">
             <span class="tool-no">04</span>
-            <span class="tool-icon icon-rotate" aria-hidden="true"><i></i></span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-rotate"/></svg>
             <strong>旋转 PDF</strong>
-            <small>全部页面或指定页旋转 90°</small>
+            <small>全部页面或指定页旋转 90°/180°</small>
             <span class="tool-link">立即使用 <b>→</b></span>
           </button>
-          <button class="tool-card" type="button" data-open-tool="pdf-to-image">
+          <button class="tool-card" type="button" data-open-tool="nup" data-group="organize" data-name="多页合一 N-up 拼版 2页 4页 打印">
             <span class="tool-no">05</span>
-            <span class="tool-icon icon-image" aria-hidden="true"><i></i></span>
-            <strong>PDF 转图片</strong>
-            <small>导出高清 PNG / JPG，自动打包</small>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-nup"/></svg>
+            <strong>多页合一</strong>
+            <small>2/4/6/9 页拼成一张，适合打印</small>
             <span class="tool-link">立即使用 <b>→</b></span>
           </button>
-          <button class="tool-card" type="button" data-open-tool="image-to-pdf">
+          <button class="tool-card" type="button" data-open-tool="long-image" data-group="organize" data-name="长图 连续 滚动 拼接图片">
             <span class="tool-no">06</span>
-            <span class="tool-icon icon-photo" aria-hidden="true"><i></i></span>
-            <strong>图片转 PDF</strong>
-            <small>多张 JPG / PNG 整理为一份 PDF</small>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-long"/></svg>
+            <strong>合并为长图</strong>
+            <small>所有页面纵向拼成一张长图</small>
             <span class="tool-link">立即使用 <b>→</b></span>
           </button>
-          <button class="tool-card" type="button" data-open-tool="watermark">
+          <button class="tool-card" type="button" data-open-tool="page-size" data-group="organize" data-name="页面尺寸 统一 A4 纸张 标准化">
             <span class="tool-no">07</span>
-            <span class="tool-icon icon-watermark" aria-hidden="true"><i>W</i></span>
-            <strong>添加水印</strong>
-            <small>支持中文文字、透明度与角度设置</small>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-page-size"/></svg>
+            <strong>页面尺寸统一</strong>
+            <small>把全部页面改成 A4 / A3 / Letter</small>
             <span class="tool-link">立即使用 <b>→</b></span>
           </button>
-          <div class="tool-card roadmap-card">
-            <span class="tool-no">NEXT</span>
-            <strong>还需要别的工具？</strong>
-            <small>OCR、PDF 转 Office、加密签名将根据使用反馈逐步增加。</small>
-            <a class="tool-link" href="https://github.com/linluo2012/qingye-pdf-tools" target="_blank" rel="noreferrer">查看开源仓库 <b>↗</b></a>
-          </div>
+
+          <button class="tool-card" type="button" data-open-tool="watermark" data-group="edit" data-name="水印 文字水印 版权 内部资料">
+            <span class="tool-no">08</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-watermark"/></svg>
+            <strong>添加水印</strong>
+            <small>中文文字水印，角度与透明度可调</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="page-number" data-group="edit" data-name="页码 添加页码 页脚 编号">
+            <span class="tool-no">09</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-page-number"/></svg>
+            <strong>添加页码</strong>
+            <small>自定义起始数字、位置与格式</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="crop" data-group="edit" data-name="裁剪 边距 去除白边 截取">
+            <span class="tool-no">10</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-crop"/></svg>
+            <strong>裁剪页面</strong>
+            <small>按四边数值裁掉多余边缘</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="grayscale" data-group="edit" data-name="灰度 去色 灰色 打印">
+            <span class="tool-no">11</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-grayscale"/></svg>
+            <strong>灰度转换</strong>
+            <small>去掉彩色，保留深浅层次</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="blackwhite" data-group="edit" data-name="黑白 二值化 纯黑白 阈值 打印 传真">
+            <span class="tool-no">12</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-compress"/></svg>
+            <strong>纯黑白</strong>
+            <small>只留黑白两色，体积最小、打印最快</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="invert" data-group="edit" data-name="反色 夜间 深色 模式 翻转颜色">
+            <span class="tool-no">13</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-invert"/></svg>
+            <strong>反色显示</strong>
+            <small>生成适合夜间阅读的深色版本</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="background" data-group="edit" data-name="背景色 底色 页面颜色 护眼">
+            <span class="tool-no">14</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-background"/></svg>
+            <strong>页面背景色</strong>
+            <small>给页面铺一层纯色，打印更省墨</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+
+          <button class="tool-card" type="button" data-open-tool="pdf-to-image" data-group="convert" data-name="PDF转图片 转 JPG PNG 导出图片 截图">
+            <span class="tool-no">15</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-image"/></svg>
+            <strong>PDF 转图片</strong>
+            <small>导出高清 PNG / JPG，多页打包</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="image-to-pdf" data-group="convert" data-name="图片转PDF JPG转PDF PNG转PDF 照片">
+            <span class="tool-no">16</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-photo"/></svg>
+            <strong>图片转 PDF</strong>
+            <small>多张 JPG / PNG / WebP 合成 PDF</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="extract-image" data-group="convert" data-name="提取图片 抽取图片 抠图 原图">
+            <span class="tool-no">17</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-extract-image"/></svg>
+            <strong>提取图片</strong>
+            <small>抽出 PDF 内嵌的原始图片</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="extract-text" data-group="convert" data-name="提取文字 复制文字 文本 导出txt">
+            <span class="tool-no">18</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-extract-text"/></svg>
+            <strong>提取文字</strong>
+            <small>导出纯文本，复制到 Word 或 AI</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="reader" data-group="convert" data-name="预览 阅读器 查看 PDF 打开">
+            <span class="tool-no">19</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-reader"/></svg>
+            <strong>PDF 预览</strong>
+            <small>站内阅读器，逐页翻看与缩放</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+
+          <button class="tool-card" type="button" data-open-tool="compress" data-group="secure" data-name="压缩 减小体积 瘦身 上传限制">
+            <span class="tool-no">20</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-compress"/></svg>
+            <strong>压缩 PDF</strong>
+            <small>扫描件重新编码，明显减小体积</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="encrypt" data-group="secure" data-name="加密 加密码 保护 密码 权限">
+            <span class="tool-no">21</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-encrypt"/></svg>
+            <strong>加密 PDF</strong>
+            <small>AES-256 加打开密码与权限限制</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="decrypt" data-group="secure" data-name="解密 去密码 解锁 移除限制">
+            <span class="tool-no">22</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-decrypt"/></svg>
+            <strong>解密 PDF</strong>
+            <small>输入原密码，输出无密码副本</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="metadata" data-group="secure" data-name="元数据 信息 查看 作者 标题 清除隐私">
+            <span class="tool-no">23</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-metadata"/></svg>
+            <strong>元数据工具</strong>
+            <small>查看、修改或一键清除文档信息</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="permissions" data-group="secure" data-name="权限 限制 打印 复制 允许">
+            <span class="tool-no">24</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-permissions"/></svg>
+            <strong>权限设置</strong>
+            <small>控制能否打印、复制、编辑与批注</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+
+          <button class="tool-card" type="button" data-open-tool="delete-blank" data-group="cleanup" data-name="删除空白页 空白 清理 多余页">
+            <span class="tool-no">25</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-delete-blank"/></svg>
+            <strong>删除空白页</strong>
+            <small>自动识别并移除没有内容的页面</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="zip" data-group="cleanup" data-name="打包 ZIP 压缩包 归档 多个">
+            <span class="tool-no">26</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-zip"/></svg>
+            <strong>打包为 ZIP</strong>
+            <small>多个 PDF 合成一个压缩包</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
+          <button class="tool-card" type="button" data-open-tool="ocr" data-group="cleanup" data-name="OCR 识别 文字识别 扫描件 可搜索 图片转文字">
+            <span class="tool-no">27</span>
+            <svg class="tool-icon" aria-hidden="true"><use href="#i-ocr"/></svg>
+            <strong>OCR 识别</strong>
+            <small>扫描件转成可搜索、可复制的 PDF</small>
+            <span class="tool-link">立即使用 <b>→</b></span>
+          </button>
         </div>
+        <p class="empty-hint" id="empty-hint" hidden>没有匹配的工具，换个关键词试试。</p>
       </div>
     </section>
 
@@ -162,9 +353,10 @@
           <h2>不是“上传后删除”，<br />而是<strong>根本不上传。</strong></h2>
         </div>
         <div class="privacy-details">
-          <article><span>浏览器内运行</span><p>PDF 解析、页面渲染和结果生成均由你的设备完成。</p></article>
+          <article><span>浏览器内运行</span><p>PDF 解析、页面渲染和结果生成都由你的设备完成。</p></article>
           <article><span>不保存文件</span><p>本站没有文件接收接口，也不会建立你的文档副本。</p></article>
-          <article><span>可离线继续</span><p>核心代码加载完成后，处理过程不依赖文档上传网络。</p></article>
+          <article><span>无账号体系</span><p>没有登录、没有上传历史、没有用户数据库。</p></article>
+          <article><span>依赖可审计</span><p>核心能力来自 MIT 与 Apache-2.0 许可的开源库。</p></article>
         </div>
       </div>
     </section>
@@ -175,7 +367,7 @@
           <div><span class="section-index">03 / HOW IT WORKS</span><h2>三步完成</h2></div>
         </div>
         <ol class="steps">
-          <li><span>1</span><div><strong>选择工具</strong><p>按你的任务进入对应处理台。</p></div></li>
+          <li><span>1</span><div><strong>选择工具</strong><p>搜索或按分类找到你要做的事。</p></div></li>
           <li><span>2</span><div><strong>添加文件</strong><p>文件只会被当前浏览器读取。</p></div></li>
           <li><span>3</span><div><strong>下载结果</strong><p>处理完成后直接保存到设备。</p></div></li>
         </ol>
@@ -186,10 +378,12 @@
       <div class="container faq-grid">
         <div><span class="section-index">04 / FAQ</span><h2>你可能想问</h2></div>
         <div class="faq-list">
-          <details open><summary>文件真的不会上传吗？</summary><p>是。处理通过浏览器中的 JavaScript、Canvas 与 Web Worker 完成，本站不接收你的 PDF 或图片文件。</p></details>
-          <details><summary>为什么压缩后文字不能搜索？</summary><p>当前压缩会把每一页重新渲染为图片，再以较低质量写入新 PDF，适合扫描件与图片型文档。文字型 PDF 建议先尝试其他工具，避免失去文本层、链接和表单。</p></details>
-          <details><summary>大文件处理失败怎么办？</summary><p>浏览器处理受设备内存限制。建议关闭其他大型应用，或先用拆分工具将文档分段处理。移动端建议处理 30 MB 以内文件。</p></details>
-          <details><summary>支持加密 PDF 吗？</summary><p>暂不处理需要密码才能打开的 PDF，也不会尝试绕过文档权限。请先使用原密码在可信软件中解锁副本。</p></details>
+          <details open><summary>文件真的不会上传吗？</summary><p>是。处理通过浏览器中的 JavaScript、Canvas 与 WebAssembly 完成，本站不接收你的 PDF 或图片文件。刷新页面后一切都从内存中消失。</p></details>
+          <details><summary>为什么压缩后文字不能搜索了？</summary><p>当前压缩会把每一页重新渲染为图片，再以较低质量写入新 PDF，适合扫描件与图片型文档。文字型 PDF 建议用其他工具，避免失去文本层、链接和表单。</p></details>
+          <details><summary>加密后的 PDF 真的安全吗？</summary><p>使用 AES-256，密码不会离开你的设备，也无法被找回。<strong>请务必自己记住密码</strong>——我们没有服务端，忘记密码就无法恢复。</p></details>
+          <details><summary>OCR 识别准确率如何？</summary><p>扫描清晰、字体规整的文档效果较好。首次使用会下载识别模型，之后浏览器会缓存。手写体与低分辨率扫描件识别率会明显下降。</p></details>
+          <details><summary>大文件处理失败怎么办？</summary><p>浏览器处理受设备内存限制。建议关闭其他大型应用，或先用拆分工具分段处理。移动端建议单文件控制在 30 MB 以内。</p></details>
+          <details><summary>支持加密 PDF 吗？</summary><p>支持。遇到加密文件时会提示你输入密码；解密工具会输出不带密码的副本。我们不会尝试绕过你无权访问的文档权限。</p></details>
         </div>
       </div>
     </section>
@@ -201,7 +395,7 @@
         <span class="brand-mark" aria-hidden="true"><span>PDF</span></span>
         <span class="brand-copy"><strong>轻页 PDF</strong><small>文件不离开你的设备</small></span>
       </div>
-      <p>免费使用 · 无需注册 · 本地处理</p>
+      <p><a href="https://github.com/linluo2012/qingye-pdf-tools" target="_blank" rel="noreferrer">开源代码 ↗</a> · MIT 许可依赖 · 免费使用</p>
       <p>© <span id="year"></span> 轻页 PDF</p>
     </div>
   </footer>
@@ -212,7 +406,7 @@
         <div>
           <span class="dialog-kicker" id="dialog-kicker">LOCAL TOOL</span>
           <h2 id="dialog-title">合并 PDF</h2>
-          <p id="dialog-description">多个 PDF 按顺序合成一个文件。</p>
+          <p id="dialog-description"></p>
         </div>
         <button class="dialog-close" type="button" aria-label="关闭处理台">×</button>
       </header>
@@ -224,12 +418,16 @@
           <p id="drop-help">拖到这里，或点击从设备选择</p>
           <small id="file-limit">单个文件建议不超过 100 MB</small>
         </div>
+
         <div class="file-list-wrap" id="file-list-wrap" hidden>
           <div class="list-head"><strong>已选择文件</strong><button type="button" id="clear-files">全部清除</button></div>
           <ul class="file-list" id="file-list"></ul>
         </div>
+
+        <div class="page-workspace" id="page-workspace" hidden></div>
         <div class="tool-options" id="tool-options"></div>
         <div class="tool-notice" id="tool-notice" hidden></div>
+
         <button class="button button-primary process-button" id="process-button" type="button" disabled>开始处理</button>
         <div class="progress-wrap" id="progress-wrap" hidden>
           <div class="progress-line"><i id="progress-bar"></i></div>
@@ -241,7 +439,26 @@
     </div>
   </dialog>
 
+  <dialog class="reader-dialog" id="reader-dialog" aria-label="PDF 预览">
+    <div class="reader-shell">
+      <header class="reader-bar">
+        <div class="reader-title"><strong id="reader-name">PDF 预览</strong><small id="reader-meta"></small></div>
+        <div class="reader-controls">
+          <button type="button" id="reader-prev" aria-label="上一页">‹</button>
+          <span class="reader-page"><input id="reader-page-input" type="number" min="1" value="1" aria-label="页码" /><i>/</i><span id="reader-total">0</span></span>
+          <button type="button" id="reader-next" aria-label="下一页">›</button>
+          <span class="reader-sep"></span>
+          <button type="button" id="reader-zoom-out" aria-label="缩小">−</button>
+          <span id="reader-zoom-label">适应</span>
+          <button type="button" id="reader-zoom-in" aria-label="放大">＋</button>
+        </div>
+        <button class="dialog-close" type="button" id="reader-close" aria-label="关闭预览">×</button>
+      </header>
+      <div class="reader-stage" id="reader-stage"><canvas id="reader-canvas"></canvas></div>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
