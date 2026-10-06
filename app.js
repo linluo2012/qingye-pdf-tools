@@ -1,11 +1,11 @@
 import {
   PDFDocument,
   degrees
-} from "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm";
-import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+} from "https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.11.1/+esm";
+import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.min.mjs";
 import JSZip from "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.worker.min.mjs";
 
 const tools = {
   merge: {
@@ -535,9 +535,11 @@ async function handleCompress() {
   }
   await pdf.destroy();
   const bytes = await output.save({ useObjectStreams: true });
-  const change = file.size ? Math.round((1 - bytes.byteLength / file.size) * 100) : 0;
-  const summary = change > 0 ? `${preset.label}完成，体积约减小 ${change}%（实际结果因文档而异）。` : `${preset.label}完成。该文件已较紧凑，结果可能不会更小。`;
-  return makeResult(bytes, "application/pdf", `${baseName(file.name)}-压缩.pdf`, summary);
+  if (bytes.byteLength >= file.size) {
+    return makeResult(file, "application/pdf", `${baseName(file.name)}-原文件.pdf`, "未找到可安全缩小的空间，已返回原文件副本，不会用更大的结果替换它。");
+  }
+  const change = Math.round((1 - bytes.byteLength / file.size) * 100);
+  return makeResult(bytes, "application/pdf", `${baseName(file.name)}-压缩.pdf`, `${preset.label}完成，体积约减小 ${change}%（实际结果因文档而异）。`);
 }
 
 async function loadPdf(file) {
