@@ -4,6 +4,12 @@
 
 🔗 在线体验：<https://qingye-pdf-tools.app.workbuddy.host/>
 
+![工具总览](docs/screenshot-tools.png)
+
+页面管理支持缩略图拖拽排序、删除与单页旋转：
+
+![页面管理](docs/screenshot-page-manager.png)
+
 ---
 
 ## 为什么不上传文件
