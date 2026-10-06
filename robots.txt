@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://qingye-pdf-tools.app.workbuddy.host/sitemap.xml
