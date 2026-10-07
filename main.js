@@ -31,9 +31,69 @@ const state = {
   tool: "merge",
   files: [],
   pageOrder: [],
+  // 缩略图缓存：renderPageGrid 重绘时需要它，否则缩略图会退化成文字占位
+  pageThumbs: new Map(),
   resultUrls: [],
   busy: false,
 };
+
+/**
+ * 页面管理的撤销/重做历史。
+ *
+ * 只保存 pageOrder 的快照 —— 每个条目是 { index, removed, rotation } 这样的
+ * 小对象，100 页也就 300 个字段，几十步历史的内存开销可以忽略。
+ * 缩略图不进历史（它不变，单独存在 state.pageThumbs 里）。
+ */
+const history = {
+  past: [],
+  future: [],
+  limit: 50,
+};
+
+/** 记录一次可撤销的变更。调用前 pageOrder 已被改成新值。 */
+function pushHistory() {
+  history.past.push(state.pageOrder.map((item) => ({ ...item })));
+  if (history.past.length > history.limit) history.past.shift();
+  // 有新操作后redo 栈就失效了，这是撤销/重做的标准语义
+  history.future.length = 0;
+  syncHistoryButtons();
+}
+
+function applyHistory(next) {
+  if (!next) return;
+  state.pageOrder = next.map((item) => ({ ...item }));
+  renderPageGrid(state.pageThumbs);
+}
+
+function undoPageEdit() {
+  if (!history.past.length) return;
+  history.future.push(state.pageOrder.map((item) => ({ ...item })));
+  applyHistory(history.past.pop());
+  syncHistoryButtons();
+}
+
+function redoPageEdit() {
+  if (!history.future.length) return;
+  history.past.push(state.pageOrder.map((item) => ({ ...item })));
+  applyHistory(history.future.pop());
+  syncHistoryButtons();
+}
+
+/** 撤销/重做按钮的可用状态。找不到按钮时静默跳过（其他工具没有这个条）。 */
+function syncHistoryButtons() {
+  const wrap = els.workspace?.querySelector(".workspace-actions");
+  if (!wrap) return;
+  const undo = wrap.querySelector('[data-ws="undo"]');
+  const redo = wrap.querySelector('[data-ws="redo"]');
+  if (undo) undo.disabled = history.past.length === 0;
+  if (redo) redo.disabled = history.future.length === 0;
+}
+
+function resetPageHistory() {
+  history.past.length = 0;
+  history.future.length = 0;
+  syncHistoryButtons();
+}
 
 const reader = {
   task: null,
@@ -113,6 +173,7 @@ function openTool(key) {
   state.tool = key;
   state.files = [];
   state.pageOrder = [];
+  resetPageHistory();
   cleanupUrls();
   resetProgress();
 
@@ -146,6 +207,7 @@ function closeTool() {
   document.body.style.overflow = "";
   state.files = [];
   state.pageOrder = [];
+  resetPageHistory();
   cleanupUrls();
 }
 
@@ -193,6 +255,7 @@ function clearFiles() {
   if (state.busy) return;
   state.files = [];
   state.pageOrder = [];
+  resetPageHistory();
   cleanupUrls();
   els.resultBox.hidden = true;
   els.workspace.hidden = true;
@@ -228,6 +291,7 @@ function updateFile(index, action) {
   if (action === "remove") {
     state.files.splice(index, 1);
     state.pageOrder = [];
+    resetPageHistory();
     els.workspace.hidden = true;
     els.workspace.innerHTML = "";
   }
@@ -253,12 +317,15 @@ async function buildPageWorkspace() {
     const total = doc.numPages;
     const limit = Math.min(total, 100);
     state.pageOrder = Array.from({ length: total }, (_, index) => ({ index, removed: false, rotation: 0 }));
+    resetPageHistory();
     const grid = document.createElement("div");
     grid.className = "page-grid";
     els.workspace.innerHTML = `
       <div class="workspace-head">
         <strong>页面顺序（共 ${total} 页${total > limit ? `，仅显示前 ${limit} 页缩略图` : ""}）</strong>
         <span class="workspace-actions">
+          <button type="button" data-ws="undo" disabled>撤销</button>
+          <button type="button" data-ws="redo" disabled>重做</button>
           <button type="button" data-ws="reverse">反转顺序</button>
           <button type="button" data-ws="restore">重置</button>
         </span>
@@ -268,12 +335,17 @@ async function buildPageWorkspace() {
     els.workspace.append(host);
     els.workspace.querySelectorAll("[data-ws]").forEach((button) => {
       button.addEventListener("click", () => {
-        if (button.dataset.ws === "reverse") {
+        const action = button.dataset.ws;
+        if (action === "undo") return undoPageEdit();
+        if (action === "redo") return redoPageEdit();
+        pushHistory();
+        if (action === "reverse") {
           state.pageOrder = [...state.pageOrder].reverse();
         } else {
           state.pageOrder = state.pageOrder.map((item) => ({ ...item, removed: false }));
         }
-        renderPageGrid();
+        renderPageGrid(state.pageThumbs);
+        return undefined;
       });
     });
 
@@ -285,6 +357,7 @@ async function buildPageWorkspace() {
       releaseCanvas(canvas);
     }
     await task.destroy();
+    state.pageThumbs = thumbs;
     renderPageGrid(thumbs);
   } catch (error) {
     els.workspace.innerHTML = `<div class="workspace-error">${escapeHtml(normalizeError(error))}</div>`;
@@ -324,17 +397,19 @@ function renderPageGrid(thumbs = new Map()) {
       event.preventDefault();
       const from = Number(event.dataTransfer.getData("text/plain"));
       if (Number.isNaN(from) || from === position) return;
+      pushHistory();
       const [moved] = state.pageOrder.splice(from, 1);
       state.pageOrder.splice(position, 0, moved);
-      renderPageGrid(thumbs);
+      renderPageGrid(state.pageThumbs);
     });
     cell.querySelectorAll("button").forEach((button) => {
       button.addEventListener("click", () => {
         const target = state.pageOrder[position];
+        pushHistory();
         if (button.dataset.op === "remove") target.removed = !target.removed;
         if (button.dataset.op === "left") target.rotation = (target.rotation + 270) % 360;
         if (button.dataset.op === "right") target.rotation = (target.rotation + 90) % 360;
-        renderPageGrid(thumbs);
+        renderPageGrid(state.pageThumbs);
       });
     });
     host.append(cell);
@@ -537,6 +612,19 @@ document.addEventListener("keydown", (event) => {
   if (!readerDialog.open) return;
   if (event.key === "ArrowLeft") document.querySelector("#reader-prev").click();
   if (event.key === "ArrowRight") document.querySelector("#reader-next").click();
+});
+
+// 页面管理的撤销/重做快捷键。
+// 只在页面管理的工作区可见时生效，且要跳过输入框 —— 否则用户在文本框里
+// 撤销自己的输入会被这里截走，是很烦人的 bug。
+document.addEventListener("keydown", (event) => {
+  if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") return;
+  if (els.workspace.hidden || !els.workspace.querySelector(".page-grid")) return;
+  const tag = document.activeElement?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  event.preventDefault();
+  if (event.shiftKey) redoPageEdit();
+  else undoPageEdit();
 });
 
 /* ------------------------------------------------------------ 工具检索 */
