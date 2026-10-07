@@ -186,6 +186,12 @@ hr{border:none;border-top:1px solid var(--line);margin:40px 0}
 /vendor/ocr/eng.traineddata.gz</code></pre>
 <p class="tiny">如果看到 <code>Content-Type: text/html</code>（而不是 JavaScript），说明 <code>_headers</code> 没生效，需要检查 <code>dist/_headers</code> 是否真的被发布了。</p>
 
+<div class="box warn">
+  <p><strong>不要用访问 <code>/_headers</code> 的方式验证配置。</strong></p>
+  <p>Cloudflare Pages 会把 <code>/_headers</code> 当作页面路由，返回的是首页 HTML，而不是配置文件内容。看起来「访问不到」其实是拿到了错误的东西，容易误判成配置没生效。</p>
+  <p>正确做法：在开发者工具的 Network 面板里看<strong>真实资源</strong>的响应头。比如 <code>vendor/pdf-lib.min.mjs</code> 的 <code>Cache-Control</code> 应该含 <code>max-age=604800</code>，<code>index.html</code> 应该是 <code>no-cache</code>。</p>
+</div>
+
 <h2>构建失败了怎么办</h2>
 
 <p>点进失败的那次部署，看<strong>构建日志</strong>（Build log）。常见几种：</p>

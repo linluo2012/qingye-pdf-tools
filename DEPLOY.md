@@ -45,8 +45,13 @@ Cloudflare 会自动加 DNS 记录；若要求手动添加，填：
 推送后等约 30 秒，检查这三项：
 
 - `https://pdf.linwt.top/` 能打开，工具列表正常
-- `https://pdf.linwt.top/_headers` 能访问（确认 Pages 接管了静态头）
+- 在浏览器开发者工具的 Network 面板里看 `vendor/pdf-lib.min.mjs` 的响应头，
+  确认 `Cache-Control` 含 `max-age=604800`
 - **试一次 OCR** —— 它依赖 8MB 的 wasm 与语言模型，最容易因路径或 MIME 问题失败
+
+> 不要访问 `/_headers` 来验证配置。Cloudflare Pages 会把它当页面路由，
+> 返回的是首页 HTML 而不是配置文件内容。要确认静态头是否生效，
+> 只能看真实资源的响应头。
 
 ## 预压缩
 
