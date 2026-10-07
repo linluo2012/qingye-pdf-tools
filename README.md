@@ -115,19 +115,28 @@ Cloudflare Pages 项目的构建配置为：构建命令 `python3 build.py --bui
 目录结构：
 
 ```
-index.html          页面结构 + SVG 图标 sprite
+index.html          页面结构 + SVG 图标 sprite（同时是 27 个落地页的模板）
 styles.css          样式
 main.js             UI 状态、工具面板、页面管理、阅读器、检索
 lib/deps.js         依赖入口（vendor 同步导入 + pdfjs/OCR 懒加载）
 lib/pdf-core.js     PDF 载入、渲染、页码解析、水印位图等基础能力
 lib/registry.js     27 个工具的元数据与选项表单
 lib/tools.js        各工具的处理实现
+pages.py            27 个落地页的文案（构建期使用，不进运行时包）
 vendor/             本地化的第三方库（含 ocr/ 的引擎与语言模型）
-build.py            构建产物 + 生成 _headers/sitemap/robots + 校验
+build.py            构建产物 + 生成落地页/_headers/sitemap/robots + 校验
 deploy.sh           构建校验 → 提交 → 推送
 ```
 
-新增一个工具：在 `lib/tools.js` 加处理函数 → `lib/registry.js` 注册元数据与选项 → `index.html` 加一张卡片并补一个 SVG 图标。
+新增一个工具：在 `lib/tools.js` 加处理函数 → `lib/registry.js` 注册元数据与选项 → `index.html` 加一张卡片并补一个 SVG 图标 → `pages.py` 补一条文案。
+
+## 工具落地页
+
+每个工具有一个独立 URL：`/tools/<slug>/`，例如 `/tools/merge/`。构建时由 `build.py` 读取 `pages.py` 的文案，以 `index.html` 为模板生成，共 27 页。
+
+每页包含唯一的 `<title>` / H1 / meta description、面包屑、该工具的使用步骤、3 条专属问答（`FAQPage` 结构化数据）和相关工具链接。构建校验会强制检查这些项，缺一个就构建失败。
+
+刻意**不自动弹出处理台**——弹窗会盖住正文，既看不清工具是干什么的，对搜索引擎也不友好。用户点首屏按钮再打开。落地页在 `<body data-tool="...">` 上标出当前工具，`main.js` 据此高亮卡片并把顶部 CTA 指向它。
 
 ## 许可
 

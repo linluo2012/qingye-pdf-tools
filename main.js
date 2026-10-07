@@ -657,4 +657,21 @@ chips.forEach((chip) => {
   });
 });
 
+/* ------------------------------------------------------------ 落地页适配 */
+
+// /tools/<slug>/ 这类落地页会在 <body data-tool="..."> 上标出当前工具。
+// 这里做两件事：高亮对应的工具卡片，以及把顶部「开始处理」按钮指向当前工具
+// —— 按钮在模板里写死是 merge，不改的话在 OCR 落地页上点它会弹出「合并 PDF」。
+//
+// 刻意不自动弹出处理台：弹窗会盖住正文，既看不清这个工具是干什么的，
+// 对搜索引擎也不友好。用户点首屏按钮再打开。
+const landingTool = document.body.dataset.tool;
+if (landingTool && TOOLS[landingTool]) {
+  cards.forEach((card) => {
+    card.classList.toggle("is-current", card.dataset.openTool === landingTool);
+  });
+  const headerCta = document.querySelector(".header-cta");
+  if (headerCta) headerCta.dataset.openTool = landingTool;
+}
+
 window.__qingye = { openTool, state, TOOLS, loadPdfJs, baseName };

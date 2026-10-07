@@ -53,6 +53,20 @@ Cloudflare 会自动加 DNS 记录；若要求手动添加，填：
 > 返回的是首页 HTML 而不是配置文件内容。要确认静态头是否生效，
 > 只能看真实资源的响应头。
 
+## 27 个工具落地页
+
+`build.py` 会额外生成 `/tools/<slug>/index.html`，共 27 页，并全部写进 sitemap。
+文案维护在 `pages.py`（构建期专用，不进运行时包，不影响首屏速度）。
+
+改动文案后不用碰 HTML，重新构建即可。构建校验会检查每一页：
+
+- `tools/<slug>/index.html` 存在
+- `<title>` 等于 `pages.py` 里写的 `seo_title`
+- 带 `data-tool="<slug>"` 标记（main.js 靠它高亮卡片和改 CTA）
+- 没有残留 `./` 的相对资源路径（页面深两层，否则样式脚本全 404）
+
+任何一项不满足就构建失败，不会静默产出坏页面。
+
 ## 预压缩
 
 `build.py` 会为所有文本资源（`.html` / `.css` / `.js` / `.mjs` / `.json` / `.xml` / `.txt` / `.svg`）
@@ -93,3 +107,11 @@ git revert HEAD --no-edit && git push origin main
 **改动没上线**
 Cloudflare Pages 只在 push 到生产分支后触发。若在 Cloudflare 控制台改过构建配置，
 确认构建命令仍是 `python3 build.py --build`、输出目录是 `dist`。
+
+**构建日志里出现「找不到锚点」**
+说明 `index.html` 被改过，而 `build.py` 赖以定位的标记（title、hero 文案、
+`steps-section`、`faq-section`、footer 等）变了。这是故意的：宁可构建失败，
+也不要默默生成一个没替换到内容的落地页。按日志提示把锚点改回一致即可。
+
+**加了新工具但构建报「落地页文案缺失」**
+新增工具要同步在 `pages.py` 里补一条，两个文件必须一一对应。
