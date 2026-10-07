@@ -14,14 +14,19 @@ Cloudflare 控制台 → Workers 和 Pages → Create application → Pages → 
 
 | 项 | 值 |
 | --- | --- |
-| 仓库 | `linluo2012/qingye-pdf-tools` |
+| 框架预设 | `None` |
 | 生产分支 | `main` |
 | 构建命令 | `python3 build.py --build` |
 | 构建输出目录 | `dist` |
+| 根目录 | 留空 |
+| 环境变量 | 不用加 |
 
-> 构建命令**不能留空**。仓库里的 `site/` 与 `dist/` 都在 `.gitignore` 中，
+> 构建命令**不能留空**，也不能漏掉 `--build`。仓库里的 `site/` 与 `dist/` 都在 `.gitignore` 中，
 > 产物不入库；Cloudflare 会在云端拉下源码后自己跑 `build.py` 生成 `dist/`。
 > 这与 `网站副业2` 的配置完全一致。
+
+字段逐项说明、填错后的现象、构建日志对照表见
+**[01-cloudflare-pages.html](01-cloudflare-pages.html)**（可直接在浏览器打开）。
 
 ### 2. 绑自定义域名
 

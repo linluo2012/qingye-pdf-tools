@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloudflare Pages 构建配置 · 详细步骤</title>
+<style>
+:root{
+  --ink:#1a1f26; --ink-2:#4a5462; --ink-3:#7b8794;
+  --line:#e3e7ec; --line-2:#eef1f4;
+  --bg:#ffffff; --bg-2:#f7f9fb;
+  --blue:#0b6bcb; --blue-bg:#eef5fd;
+  --green:#0a7c4a; --green-bg:#eaf7f0;
+  --amber:#9a5b00; --amber-bg:#fff6e8;
+  --red:#c0392b; --red-bg:#fdedeb;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#e8ecf1; --ink-2:#b3bcc7; --ink-3:#8892a0;
+    --line:#2a313a; --line-2:#22272e;
+    --bg:#14181d; --bg-2:#1a1f26;
+    --blue:#6aa9f0; --blue-bg:#16283d;
+    --green:#5fc495; --green-bg:#12291f;
+    --amber:#e0a458; --amber-bg:#2d2314;
+    --red:#f08379; --red-bg:#2e1a18;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+.wrap{max-width:860px;margin:0 auto;padding:48px 24px 96px}
+header{border-bottom:2px solid var(--line);padding-bottom:24px;margin-bottom:40px}
+h1{font-size:28px;margin:0 0 8px;letter-spacing:-.02em}
+.sub{color:var(--ink-3);font-size:14px;margin:0}
+h2{font-size:20px;margin:48px 0 16px;padding-top:8px;letter-spacing:-.01em}
+h3{font-size:16px;margin:28px 0 10px;color:var(--ink)}
+p{margin:12px 0}
+code{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:2px 6px;border-radius:4px;color:var(--ink)}
+pre{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:14px 0}
+pre code{background:none;padding:0;font-size:13px;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}
+th{background:var(--bg-2);font-weight:600;font-size:13px;color:var(--ink-2);letter-spacing:.02em}
+tr:last-child td{border-bottom:none}
+.box{border-left:3px solid;border-radius:0 6px 6px 0;padding:14px 18px;margin:20px 0;font-size:14.5px}
+.box p:first-child{margin-top:0}.box p:last-child{margin-bottom:0}
+.key{border-color:var(--blue);background:var(--blue-bg)}
+.warn{border-color:var(--amber);background:var(--amber-bg)}
+.stop{border-color:var(--red);background:var(--red-bg)}
+.ok{border-color:var(--green);background:var(--green-bg)}
+.field{display:grid;grid-template-columns:150px 1fr;gap:6px 16px;margin:20px 0;font-size:14.5px;align-items:baseline}
+.field dt{font-weight:600;color:var(--ink-2);font-size:13.5px}
+.field dd{margin:0;font-family:var(--mono);font-size:13px;word-break:break-all}
+.step{display:flex;gap:14px;margin:20px 0;align-items:flex-start}
+.step-n{flex:0 0 28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-top:2px}
+.step-b{flex:1;min-width:0}
+ol,ul{margin:12px 0;padding-left:22px}
+li{margin:7px 0}
+.tiny{font-size:13px;color:var(--ink-3)}
+a{color:var(--blue)}
+hr{border:none;border-top:1px solid var(--line);margin:40px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Cloudflare Pages 构建配置 · 详细步骤</h1>
+  <p class="sub">轻页 PDF 工具 · qingye-pdf-tools · 你已完成「Connect to Git」，接下来是构建配置这一步</p>
+</header>
+
+<div class="box key">
+  <p><strong>先说结论：这四项照抄，不要改。</strong></p>
+  <p>框架预设选 <code>None</code>，构建命令 <code>python3 build.py --build</code>，构建输出目录 <code>dist</code>，根目录留空。填完点「保存并部署」。</p>
+</div>
+
+<h2>你现在在哪一步</h2>
+<p>你已完成仓库连接（Connect to Git）。Cloudflare 接下来会让你配置「构建设置」。这一页字段多、容易误填，我逐个说清每个字段填什么、以及填错会出现什么现象。</p>
+
+<h2>配置字段逐项对照</h2>
+
+<table>
+  <thead><tr><th style="width:26%">界面字段</th><th style="width:30%">填什么</th><th>为什么</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>项目名称</strong><br><span class="tiny">Project name</span></td>
+      <td><code>qingye-pdf-tools</code></td>
+      <td>只影响 Cloudflare 上的项目名和默认域名 <code>xxx.pages.dev</code>，随时可改。</td>
+    </tr>
+    <tr>
+      <td><strong>生产分支</strong><br><span class="tiny">Production branch</span></td>
+      <td><code>main</code></td>
+      <td>只有往这个分支推送才触发自动部署。选错的话 push 后没有任何反应。</td>
+    </tr>
+    <tr>
+      <td><strong>框架预设</strong><br><span class="tiny">Framework preset</span></td>
+      <td><strong>None</strong></td>
+      <td>本站是纯静态 HTML，不走任何框架的构建流程。选错会触发它自己的构建脚本，覆盖你的配置。</td>
+    </tr>
+    <tr>
+      <td><strong>构建命令</strong><br><span class="tiny">Build command</span></td>
+      <td><code>python3 build.py --build</code></td>
+      <td><strong>关键。</strong><code>--build</code> 让脚本把产物输出到 <code>dist/</code>（不加则输出到 <code>site/</code>，与你要填的输出目录不匹配，构建会报「找不到目录」）。</td>
+    </tr>
+    <tr>
+      <td><strong>构建输出目录</strong><br><span class="tiny">Build output directory</span></td>
+      <td><code>dist</code></td>
+      <td><strong>关键。</strong>必须是 <code>dist</code>，不要写成 <code>./dist</code>、<code>dist/</code> 或 <code>site</code>。这个字段要和 <code>build.py</code> 实际输出的目录名完全一致。</td>
+    </tr>
+    <tr>
+      <td><strong>根目录</strong><br><span class="tiny">Root directory</span></td>
+      <td><strong>留空</strong><br><span class="tiny">（不填，默认为仓库根）</span></td>
+      <td>留空表示 <code>build.py</code> 在仓库根目录。如果填 <code>qingye-pdf-tools</code> 之类的子目录，脚本就找不到了。</td>
+    </tr>
+    <tr>
+      <td><strong>环境变量</strong><br><span class="tiny">Environment variables</span></td>
+      <td><strong>不用加</strong></td>
+      <td>域名已经写在仓库里的 <code>domain.txt</code>，构建时脚本自己读，不需要在 Cloudflare 上配。</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="box warn">
+  <p><strong>最容易踩的两个坑</strong></p>
+  <p><strong>1. 构建命令漏了 <code>--build</code>。</strong>这时脚本输出到 <code>site/</code>，而输出目录填的是 <code>dist</code>，Cloudflare 会报「输出目录不存在」或部署出一个空站。<code>--build</code> 是开关，不能省。</p>
+  <p><strong>2. 输出目录填成 <code>./dist</code> 或加了斜杠。</strong>Cloudflare 认的是相对仓库根的路径，写法要干净。就填三个字母加两个字母：<code>dist</code>。</p>
+</div>
+
+<h2>操作步骤</h2>
+
+<div class="step"><div class="step-n">1</div><div class="step-b">
+  <p>在「构建设置」页面找到<strong>框架预设</strong>下拉框，选 <strong>None</strong>。</p>
+  <p class="tiny">选 None 后，下方才会出现「构建命令」「构建输出目录」这两个可填字段。有些界面在选 None 之前它们是灰的。</p>
+</div></div>
+
+<div class="step"><div class="step-n">2</div><div class="step-b">
+  <p><strong>构建命令</strong>框里输入（注意有空格）：</p>
+  <pre><code>python3 build.py --build</code></pre>
+  <p class="tiny">不要写成 <code>python build.py</code>（少了 3 可能找不到）、<code>./build.py</code>（不可执行）、或 <code>python3 build.py</code>（漏了 <code>--build</code>）。</p>
+</div></div>
+
+<div class="step"><div class="step-n">3</div><div class="step-b">
+  <p><strong>构建输出目录</strong>框里输入：</p>
+  <pre><code>dist</code></pre>
+</div></div>
+
+<div class="step"><div class="step-n">4</div><div class="step-b">
+  <p><strong>根目录</strong>保持空白，不要填任何东西。</p>
+  <p class="tiny">如果界面默认填了 <code>/</code> 或仓库名，保持原样即可，<code>/</code> 等价于仓库根。</p>
+</div></div>
+
+<div class="step"><div class="step-n">5</div><div class="step-b">
+  <p><strong>生产分支</strong>确认为 <code>main</code>。</p>
+  <p class="tiny">你的仓库主分支就是 <code>main</code>（本地 <code>git branch --show-current</code> 验证过）。</p>
+</div></div>
+
+<div class="step"><div class="step-n">6</div><div class="step-b">
+  <p>点<strong>「保存并部署」</strong>（Save and Deploy）。</p>
+  <p class="tiny">首次部署通常 1-3 分钟，因为要拉 21MB 的依赖并构建。之后每次 push 约 30 秒。</p>
+</div></div>
+
+<h2>怎么确认成功了</h2>
+
+<p>部署完成后，Cloudflare 会给你一个 <code>https://qingye-pdf-tools.pages.dev</code>（或类似名字）地址。先用它验证，成功后再绑域名。</p>
+
+<ol>
+  <li>打开该地址，页面能正常显示，27 个工具卡片都在</li>
+  <li>随便点一个工具（比如「合并 PDF」），拖个文件进去，能出结果</li>
+  <li><strong>重点：试一次 OCR。</strong>它是唯一依赖 8MB 外部资源的工具，最容易暴露问题</li>
+</ol>
+
+<div class="box key">
+  <p><strong>为什么 OCR 最值得优先测</strong></p>
+  <p>OCR 要加载 wasm 内核和语言模型，浏览器用 <code>importScripts()</code> 加载内核时会检查响应的 MIME 类型。Cloudflare 对 <code>.wasm.js</code> 默认给的类型可能不对，浏览器会直接拒绝 —— 表现为「核心组件加载失败」。</p>
+  <p>我在 <code>_headers</code> 里已经指定了 <code>Content-Type: application/javascript</code> 绕开这个问题，但只有在 Cloudflare 上真跑过才能确认生效。</p>
+</div>
+
+<p>想看资源有没有正常加载，打开浏览器开发者工具的 Network 面板，找这几个请求，它们应当全部 200：</p>
+<pre><code>/vendor/ocr/tesseract.esm.min.js
+/vendor/ocr/worker.min.js
+/vendor/ocr/tesseract-core-*.wasm.js
+/vendor/ocr/chi_sim.traineddata.gz
+/vendor/ocr/eng.traineddata.gz</code></pre>
+<p class="tiny">如果看到 <code>Content-Type: text/html</code>（而不是 JavaScript），说明 <code>_headers</code> 没生效，需要检查 <code>dist/_headers</code> 是否真的被发布了。</p>
+
+<h2>构建失败了怎么办</h2>
+
+<p>点进失败的那次部署，看<strong>构建日志</strong>（Build log）。常见几种：</p>
+
+<table>
+  <thead><tr><th style="width:44%">日志里出现</th><th>原因与处理</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>Directory not found</code><br>或找不到 dist</td>
+      <td>构建命令漏了 <code>--build</code>，产物去了 <code>site/</code>。补上即可。</td>
+    </tr>
+    <tr>
+      <td><code>ModuleNotFoundError</code></td>
+      <td>不会有这个问题 —— <code>build.py</code> 只用 Python 标准库，不装任何第三方包。</td>
+    </tr>
+    <tr>
+      <td><code>构建成功但页面 404</code></td>
+      <td>输出目录名和实际产物目录不一致。确认是 <code>dist</code> 而不是 <code>site</code>。</td>
+    </tr>
+    <tr>
+      <td><code>找不到 vendor/ocr 资源</code></td>
+      <td>产物缺 OCR 资源。构建日志里应该会出现「vendor/ocr/ 为空」的提示 —— 这是我故意加的校验，出现就说明 <code>vendor/</code> 没被提交进仓库，检查 <code>.gitignore</code>。</td>
+    </tr>
+    <tr>
+      <td>构建成功但改了代码没生效</td>
+      <td>推的不是 <code>main</code> 分支。Pages 只对生产分支触发部署。</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>接下来：绑定 pdf.linwt.top</h2>
+
+<p>验证 <code>pages.dev</code> 地址正常后，再绑自定义域名（避免域名指向空站时排查困难）。</p>
+
+<ol>
+  <li>Pages 项目 → <strong>Custom domains</strong>（自定义域）</li>
+  <li>点 <strong>Set up a custom domain</strong></li>
+  <li>输入 <code>pdf.linwt.top</code>，回车</li>
+  <li>Cloudflare 会自动添加 DNS 记录。如果它要求你手动加，填：类型 <code>CNAME</code>、名称 <code>pdf</code>、目标 <code>qingye-pdf-tools.pages.dev</code></li>
+  <li>等待证书签发，通常几分钟到半小时</li>
+</ol>
+
+<div class="box ok">
+  <p><strong>之后每次上线就走这一条命令：</strong></p>
+  <pre><code>cd /Volumes/2t/workplace/网站副业pdf
+./deploy.sh "这次改了什么"</code></pre>
+  <p>脚本会先本地构建校验（和云端跑同一个 <code>build.py --build</code>），通过后提交并推送，约 30 秒后线上自动更新。</p>
+  <p>想撤销：<code>git revert HEAD --no-edit &amp;&amp; git push origin main</code></p>
+</div>
+
+<hr>
+<p class="tiny">两个入口会同时在线：<code>pdf.linwt.top</code>（Cloudflare，主入口）与 <code>qingye-pdf-tools.app.workbuddy.host</code>（保留）。<code>sitemap.xml</code> 与 <code>robots.txt</code> 里两者都已声明。</p>
+
+</div>
+</body>
+</html>
