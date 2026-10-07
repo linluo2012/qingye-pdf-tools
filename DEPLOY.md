@@ -45,8 +45,18 @@ Cloudflare 会自动加 DNS 记录；若要求手动添加，填：
 推送后等约 30 秒，检查这三项：
 
 - `https://pdf.linwt.top/` 能打开，工具列表正常
-- `https://pdf.linwt.host/_headers` 能访问（确认 Pages 接管了静态头）
+- `https://pdf.linwt.top/_headers` 能访问（确认 Pages 接管了静态头）
 - **试一次 OCR** —— 它依赖 8MB 的 wasm 与语言模型，最容易因路径或 MIME 问题失败
+
+## 预压缩
+
+`build.py` 会为所有文本资源（`.html` / `.css` / `.js` / `.mjs` / `.json` / `.xml` / `.txt` / `.svg`）
+生成 `.gz` 副本，原文件同时保留。实测省下约 9MB —— 470KB 的 `pdf-lib.min.mjs` 压到 202KB。
+
+只生成 `.gz` 不生成 `.br`：Python 标准库没有 Brotli，而 Cloudflare 收到 `.gz` 后会自行
+转成 Brotli 下发给支持的浏览器，效果等同。
+
+已经压缩过的文件（`*.traineddata.gz`）和图片不会被二次压缩。
 
 ## 关于两个入口并存
 

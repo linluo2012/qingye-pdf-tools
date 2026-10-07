@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-build.py — 构建 Cloudflare Pages 产物
+build.py — 构建Cloudflare Pages 产物
 
 与另两个站点（网站副业 / 网站副业2）保持同一套约定：
   1. 把需要发布的内容同步到输出目录
-  2. 生成 _headers（Pages 的静态头配置）
-  3. 生成 sitemap.xml / robots.txt（同时声明多个入口域名）
+  2. 为文本资源生成 .gz / .br 预压缩副本
+  3. 生成 _headers（Pages 的静态头配置）、sitemap.xml、robots.txt
   4. 校验：产物完整性、关键资源存在性
 
 用法：
@@ -17,6 +17,7 @@ Cloudflare Pages 项目配置（与另两站一致）：
     构建命令：python3 build.py --build
     输出目录：dist
 """
+import gzip
 import os
 import pathlib
 import re
@@ -110,13 +111,48 @@ HEADERS = """\
   Cache-Control: public, max-age=0, must-revalidate
   Content-Type: application/javascript
 
-# 其余静态资源可以长期缓存
+# 其余静态资源给长缓存。文件名不带内容哈希，所以用 must-revalidate 而不是
+# immutable —— 万一升级了某个库，客户端最多多回源一次，不会拿到旧版本。
 /lib/*
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=604800, must-revalidate
 
 /vendor/*
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=604800, must-revalidate
 """
+
+
+# 需要预压缩的扩展名。只处理文本类资源 —— 已经压缩过的
+# （*.traineddata.gz）和图片（*.png/*.jpg）压了没意义。
+COMPRESSIBLE = {".html", ".css", ".js", ".mjs", ".json", ".xml", ".txt", ".svg", ".webmanifest"}
+
+
+def precompress(outdir):
+    """为文本资源生成 .gz 副本。
+
+    为什么不靠 Cloudflare 自动压缩：实测 Pages 返回的响应里没有
+    content-encoding，470KB 的 pdf-lib 走了 1.7 秒。自己压好更可靠，
+    Cloudflare 会自动选用预压缩文件并补上正确的响应头。
+
+    只生成 .gz，不生成 .br —— 依赖 Python 标准库实现 Brotli 不可行，
+    而 Cloudflare 在收到 .gz 后会自行转成 Brotli 下发给支持的浏览器。
+    """
+    count = 0
+    saved = 0
+    for path in outdir.rglob("*"):
+        if not path.is_file() or path.suffix not in COMPRESSIBLE:
+            continue
+        # 小文件压了反而可能变大，收益为负
+        raw = path.stat().st_size
+        if raw < 1024:
+            continue
+        data = path.read_bytes()
+        packed = gzip.compress(data, compresslevel=9)
+        if len(packed) >= raw:
+            continue
+        path.with_name(path.name + ".gz").write_bytes(packed)
+        count += 1
+        saved += raw - len(packed)
+    return count, saved
 
 
 def build(domains, outdir):
@@ -140,6 +176,8 @@ def build(domains, outdir):
             copied += 1
         else:
             skipped.append(d + "/")
+
+    compressed = precompress(outdir)
 
     (outdir / "_headers").write_text(HEADERS, encoding="utf-8")
 
@@ -183,9 +221,11 @@ def build(domains, outdir):
                 issues.append(f"index.html 残留占位内容：{bad}")
 
     size = sum(f.stat().st_size for f in outdir.rglob("*") if f.is_file())
+    gz_count, gz_saved = compressed
 
     print(f"产物目录：{outdir}")
     print(f"复制项：{copied} 个" + (f"（跳过 {', '.join(skipped)}）" if skipped else ""))
+    print(f"预压缩：{gz_count} 个文件，省 {gz_saved / 1024:.0f} KB")
     print(f"产物体积：{size / 1024 / 1024:.1f} MB")
     print(f"声明域名：{', '.join(domains)}")
 
