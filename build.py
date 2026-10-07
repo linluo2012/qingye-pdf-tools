@@ -61,7 +61,7 @@ REQUIRED = [
 ]
 
 
-def read_domains() -> list[str]:
+def read_domains():
     """主域名优先取环境变量，其次 domain.txt，最后用默认值。"""
     env = os.environ.get("SITE_DOMAIN", "").strip()
     if env:
@@ -119,7 +119,7 @@ HEADERS = """\
 """
 
 
-def build(domains: list[str], outdir: pathlib.Path) -> int:
+def build(domains, outdir):
     if outdir.exists():
         shutil.rmtree(outdir)
     outdir.mkdir(parents=True)
