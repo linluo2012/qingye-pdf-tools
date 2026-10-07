@@ -81,11 +81,34 @@ Cloudflare 会自动加 DNS 记录；若要求手动添加，填：
 
 线上同时存在两个可访问地址，内容完全相同：
 
-- `https://pdf.linwt.top/`（Cloudflare，主入口）
-- `https://qingye-pdf-tools.app.workbuddy.host/`（保留）
+- `https://pdf.linwt.top/`（Cloudflare，主入口，**canonical 指向这里**）
+- `https://qingye-pdf-tools.app.workbuddy.host/`（备用）
 
-`sitemap.xml` 与 `robots.txt` 里两个都声明了。若将来不想保留第二个，
-用发布工具下线即可，代码不用动。
+**只有主域名进 sitemap 和 robots.txt。** sitemap 里混入别的主机时，
+Search Console 会报「网址不在该资源中」；而两个主机内容完全相同本身就是
+重复内容，会分散权重。备用地址不提交给搜索引擎，靠页面上的 canonical
+把权重归给主域名。若将来不想保留第二个，用发布工具下线即可，代码不用动。
+
+## 提交给 Search Console
+
+在 GSC 里提交的是 **`https://pdf.linwt.top/sitemap.xml`**（28 条：首页 + 27 个工具落地页）。
+
+GSC 的资源必须覆盖 `pdf.linwt.top`，两种方式：
+
+| 资源类型 | 填什么 | 验证方式 |
+| --- | --- | --- |
+| 网域资源（推荐） | `linwt.top` | DNS 加一条 TXT 记录；自动覆盖所有子域 |
+| 网址前缀资源 | `https://pdf.linwt.top/` | 上传 HTML 文件或加 DNS 记录 |
+
+注意：**域名`linwt.top`本身是另一个站**，它的 `sitemap.xml` 里是计算器页面，
+提交了会显示「无法抓取」或全部不属于本站。别提交 `https://linwt.top/sitemap.xml`。
+
+提交后一般 1–3 天开始处理。若一直显示「无法抓取」，按这个顺序排查：
+
+1. 资源类型是否覆盖了 `pdf.linwt.top`（见上表）
+2. `https://pdf.linwt.top/sitemap.xml` 是否返回 200（用无代理的网络试，本地代理常常假失败）
+3. `https://pdf.linwt.top/robots.txt` 是否有 `Allow: /`（有就行）
+4. 页面是否被 Cloudflare 的防火墙规则拦了（Pages 默认不拦，装过自定义规则才可能）
 
 ## 回滚
 

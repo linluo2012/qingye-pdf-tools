@@ -38,8 +38,11 @@ if str(ROOT) not in sys.path:
 
 import pages as landing  # noqa: E402  （必须在 sys.path 处理之后）
 
-# 主域名走 Cloudflare，自定义域名；worker 链接作为备用入口也写进 sitemap，
-# 因为线上确实存在两个可访问地址，两个都提交给搜索引擎更保险。
+# 主域名走 Cloudflare 自定义域名。第二个地址是备用入口（同一份内容），
+# 但**不写进 sitemap、不做 canonical**：
+#   1. sitemap 里出现非本资源的主机，GSC 会报「网址不在该资源中」；
+#   2. 两个主机内容完全相同 = 重复内容，会分散权重。
+# 备用地址靠 canonical 把权重归给主域名即可（落地页的 canonical 已指向主域名）。
 DEFAULT_DOMAINS = ["pdf.linwt.top", "qingye-pdf-tools.app.workbuddy.host"]
 
 # 需要原样拷贝到产物的文件与目录。
@@ -478,6 +481,23 @@ def build(domains, outdir):
             skipped.append(d + "/")
 
     home_url = "https://{}/".format(domains[0])
+
+    # 源码里首页的 canonical / og:url 写的是备用域名，发布时必须改成主域名。
+    # 不改的话 Google 在主域名上读到「 preferred URL 是另一个主机」，
+    # 权重会算给备用地址，主域名反而收录不进去。
+    index_path = outdir / "index.html"
+    if index_path.exists():
+        text = index_path.read_text(encoding="utf-8")
+        text = re.sub(
+            r'(<link rel="canonical" href=")[^"]*(")',
+            lambda m: m.group(1) + home_url + m.group(2), text, count=1,
+        )
+        text = re.sub(
+            r'(<meta property="og:url" content=")[^"]*(")',
+            lambda m: m.group(1) + home_url + m.group(2), text, count=1,
+        )
+        index_path.write_text(text, encoding="utf-8")
+
     tools = parse_registry()
     if len(tools) != 27:
         raise SystemExit("从 registry.js 解析到 {} 个工具，预期 27 个".format(len(tools)))
@@ -488,17 +508,17 @@ def build(domains, outdir):
 
     (outdir / "_headers").write_text(HEADERS, encoding="utf-8")
 
-    # sitemap：首页 + 27 个工具落地页，两个入口域名都列出来
+    # sitemap：首页 + 27 个工具落地页。只声明主域名 ——
+    # sitemap 里不能混主机，否则 GSC 会报「网址不在该资源中」。
     urls = []
     paths = [("", "1.0", "weekly")] + [("tools/{}/".format(s), "0.8", "monthly") for s in landing_slugs]
-    for d in domains:
-        for path, priority, freq in paths:
-            urls.append(
-                "  <url>\n    <loc>https://{}/{}</loc>\n"
-                "    <changefreq>{}</changefreq>\n    <priority>{}</priority>\n  </url>".format(
-                    d, path, freq, priority
-                )
+    for path, priority, freq in paths:
+        urls.append(
+            "  <url>\n    <loc>https://{}/{}</loc>\n"
+            "    <changefreq>{}</changefreq>\n    <priority>{}</priority>\n  </url>".format(
+                domains[0], path, freq, priority
             )
+        )
     (outdir / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -507,10 +527,11 @@ def build(domains, outdir):
         encoding="utf-8",
     )
 
-    lines = ["User-agent: *", "Allow: /"]
-    for d in domains:
-        lines.append(f"Sitemap: https://{d}/sitemap.xml")
-    (outdir / "robots.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # robots.txt 的 Sitemap 同样只能指向本主机的 sitemap
+    (outdir / "robots.txt").write_text(
+        "User-agent: *\nAllow: /\nSitemap: https://{}/sitemap.xml\n".format(domains[0]),
+        encoding="utf-8",
+    )
 
     issues = []
 
@@ -548,6 +569,15 @@ def build(domains, outdir):
         for bad in ("example.com", "your-domain", "TODO"):
             if bad in text:
                 issues.append(f"index.html 残留占位内容：{bad}")
+        if 'rel="canonical" href="{}"'.format(home_url) not in text:
+            issues.append("index.html 的 canonical 没指向主域名 " + home_url)
+
+    # sitemap 里混进别的主机，GSC 会报「网址不在该资源中」，直接拦住
+    sitemap = outdir / "sitemap.xml"
+    if sitemap.exists():
+        hosts = set(re.findall(r"<loc>https?://([^/]+)/", sitemap.read_text(encoding="utf-8")))
+        if hosts - {domains[0]}:
+            issues.append("sitemap 混入了非主域名的主机：" + ", ".join(sorted(hosts - {domains[0]})))
 
     size = sum(f.stat().st_size for f in outdir.rglob("*") if f.is_file())
     gz_count, gz_saved = compressed
