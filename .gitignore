@@ -2,3 +2,7 @@
 .workbuddy/
 .wbapp_*.genie
 *.log
+
+# 构建产物，不入库（Cloudflare Pages 云端会自己跑 build.py 生成）
+site/
+dist/

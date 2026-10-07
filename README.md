@@ -95,12 +95,22 @@
 
 ## 开发
 
-纯静态站点，无构建步骤：
+源码本身是纯静态站点，直接起服务器即可：
 
 ```bash
 python3 -m http.server 4173
 # 打开 http://127.0.0.1:4173
 ```
+
+部署走 Cloudflare Pages，用一层薄构建脚本把源码整理成产物：
+
+```bash
+./deploy.sh --preview        # 只本地构建，产物在 dist/
+./deploy.sh "改了什么"       # 构建 + 提交 + 推送，Pages 自动上线
+```
+
+Cloudflare Pages 项目的构建配置为：构建命令 `python3 build.py --build`，输出目录 `dist`。
+`site/` 与 `dist/` 都不入库，云端会自己重新生成。详见 [DEPLOY.md](DEPLOY.md)。
 
 目录结构：
 
@@ -112,7 +122,9 @@ lib/deps.js         依赖入口（vendor 同步导入 + pdfjs/OCR 懒加载）
 lib/pdf-core.js     PDF 载入、渲染、页码解析、水印位图等基础能力
 lib/registry.js     27 个工具的元数据与选项表单
 lib/tools.js        各工具的处理实现
-vendor/             本地化的第三方库
+vendor/             本地化的第三方库（含 ocr/ 的引擎与语言模型）
+build.py            构建产物 + 生成 _headers/sitemap/robots + 校验
+deploy.sh           构建校验 → 提交 → 推送
 ```
 
 新增一个工具：在 `lib/tools.js` 加处理函数 → `lib/registry.js` 注册元数据与选项 → `index.html` 加一张卡片并补一个 SVG 图标。
