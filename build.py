@@ -20,6 +20,7 @@ Cloudflare Pages 项目配置（与另两站一致）：
 """
 import gzip
 import json
+import datetime
 import os
 import pathlib
 import re
@@ -510,13 +511,16 @@ def build(domains, outdir):
 
     # sitemap：首页 + 27 个工具落地页。只声明主域名 ——
     # sitemap 里不能混主机，否则 GSC 会报「网址不在该资源中」。
+    # lastmod 用构建日期，帮助 Google 判断哪些页面需要重新抓取。
+    today = datetime.date.today().isoformat()
     urls = []
     paths = [("", "1.0", "weekly")] + [("tools/{}/".format(s), "0.8", "monthly") for s in landing_slugs]
     for path, priority, freq in paths:
         urls.append(
             "  <url>\n    <loc>https://{}/{}</loc>\n"
+            "    <lastmod>{}</lastmod>\n"
             "    <changefreq>{}</changefreq>\n    <priority>{}</priority>\n  </url>".format(
-                domains[0], path, freq, priority
+                domains[0], path, today, freq, priority
             )
         )
     (outdir / "sitemap.xml").write_text(
