@@ -19,9 +19,11 @@
 - PDF 解析与写入：`@cantoo/pdf-lib`（MIT）
 - 页面渲染与文字提取：`pdfjs-dist`（Apache-2.0）
 - 打包：`JSZip`（MIT）
-- OCR：`tesseract.js`（Apache-2.0，按需加载）
+- OCR：`tesseract.js` + `tesseract.js-core`（Apache-2.0）
 
-依赖已全部下载到 `vendor/`，站点不请求任何 CDN。刷新页面后内存中的文件即消失。
+依赖已全部下载到 `vendor/`，站点不请求任何 CDN，刷新页面后内存中的文件即消失。
+
+首屏只加载 pdf-lib（约 470KB）；pdfjs（含 1.26MB worker）按需加载。OCR 的 wasm 内核与语言模型合计约 8MB，放在 `vendor/ocr/`，只在真正使用 OCR 时才下载并缓存。
 
 ## 工具清单
 
