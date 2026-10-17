@@ -302,6 +302,16 @@ details p { margin: -4px 42px 25px 0; color: var(--muted); line-height: 1.75; fo
 .related-link b { display: inline-block; transition: transform .22s ease; }
 .related-link:hover b { transform: translateX(4px); }
 
+/* 语言切换器 */
+.lang-select { height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); font-size: 13px; cursor: pointer; }
+.lang-select:hover { border-color: var(--accent); color: var(--accent); }
+.lang-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 回访用户切过语言时，翻译完成前先藏住正文，避免闪一屏中文。
+   首次访问不加这个属性（见 index.html 里的说明），所以不影响首屏速度。
+   用 visibility 而不是 display：布局位置先占好，放开时不会跳动。 */
+html[data-i18n-pending] body { visibility: hidden; }
+
 /* 落地页上高亮当前工具 */
 .tool-card.is-current { background: rgba(230, 87, 47, .12); }
 .tool-card.is-current::after { content: "当前工具"; position: absolute; top: 18px; right: 18px; padding: 4px 9px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .06em; }

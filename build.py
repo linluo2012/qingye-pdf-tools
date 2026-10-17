@@ -67,12 +67,18 @@ REQUIRED = [
     "lib/registry.js",
     "lib/deps.js",
     "lib/pdf-core.js",
+    "lib/i18n.js",
     # OCR 全链路
     "vendor/ocr/tesseract.esm.min.js",
     "vendor/ocr/worker.min.js",
     "vendor/ocr/chi_sim.traineddata.gz",
     "vendor/ocr/eng.traineddata.gz",
 ]
+
+# 界面支持的语言。缺任何一个词典文件，切到该语言时整页会静默回退成中文，
+# 构建时必须拦住。en.js 是基准，其余词典的 key 必须与它完全一致。
+LANGS = ["zh-CN", "zh-TW", "en", "ja", "ko", "es", "fr", "de"]
+DICT_ENTRY = re.compile(r'^\s{2}"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$', re.MULTILINE)
 
 
 def read_domains():
@@ -175,6 +181,14 @@ def precompress(outdir):
         count += 1
         saved += raw - len(packed)
     return count, saved
+
+
+def parse_dict(path):
+    """读出词典文件里的 key 顺序。构建期用它核对各语言是否齐平。"""
+    out = {}
+    for m in DICT_ENTRY.finditer(path.read_text(encoding="utf-8")):
+        out[m.group(1)] = m.group(2)
+    return out
 
 
 # ---------------------------------------------------------------- 落地页生成
@@ -565,6 +579,37 @@ def build(domains, outdir):
         # 落地页深两层，不能还留着 ./ 的相对路径，否则样式和脚本全 404
         if re.search(r'(?:href|src)="\./', text):
             issues.append(f"落地页 {slug} 仍指向 ./ 的相对资源")
+
+    # i18n：词典缺失或 key 不齐，页面会静默回退成中文，用户看不到报错
+    i18n_dir = outdir / "lib" / "i18n"
+    en_file = i18n_dir / "en.js"
+    if not en_file.exists():
+        issues.append("缺少基准词典 lib/i18n/en.js")
+        base_keys = None
+    else:
+        base_keys = parse_dict(en_file)
+        if not base_keys:
+            issues.append("lib/i18n/en.js 没解析到任何条目")
+    for code in LANGS:
+        if code == "zh-CN":
+            continue  # 中文原文写在 HTML/JS 里，不需要词典
+        path = i18n_dir / f"{code}.js"
+        if not path.exists():
+            issues.append(f"缺少词典 lib/i18n/{code}.js（该语言会整页显示中文）")
+            continue
+        keys = parse_dict(path)
+        if base_keys:
+            missing = [k for k in base_keys if k not in keys]
+            extra = [k for k in keys if k not in base_keys]
+            if missing:
+                issues.append(f"{code}.js 缺 {len(missing)} 条，例：{missing[0]}")
+            if extra:
+                issues.append(f"{code}.js 多 {len(extra)} 条，例：{extra[0]}")
+            # 占位符对不上会导致译文里出现 {n} 之类的裸标记
+            for k, v in keys.items():
+                if set(re.findall(r"\{(\w+)\}", k)) != set(re.findall(r"\{(\w+)\}", v)):
+                    issues.append(f"{code}.js 占位符不匹配：{k}")
+                    break
 
     # 检查 index.html 里是否残留占位域名
     index = outdir / "index.html"

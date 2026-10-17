@@ -15,6 +15,29 @@
   <title>轻页 PDF｜27 个文件不上传的在线 PDF 工具箱</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23e6572f'/%3E%3Cpath d='M20 14h17l9 9v27H20z' fill='white'/%3E%3Cpath d='M37 14v10h9' fill='none' stroke='%23e6572f' stroke-width='3'/%3E%3Cpath d='M26 34h14M26 41h10' stroke='%23e6572f' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./styles.css" />
+  <script>
+    /**
+     * 回访用户已经选过语言时，先把正文藏住，等词典加载、翻译完成再显示，
+     * 免得先闪一屏中文再整页跳成别的语言。
+     *
+     * 首次访问不藏 —— 那时还不知道用户用什么语言，藏了只是白白拖慢首屏，
+     * 而 Googlebot 也不会命中这段（它没有 localStorage）。
+     * 兜底 1.5 秒强制放开：万一词典请求挂了，也不能把页面锁死在空白。
+     */
+    (function () {
+      try {
+        var saved = localStorage.getItem("qingye-lang");
+        if (saved && saved !== "zh-CN") {
+          document.documentElement.setAttribute("data-i18n-pending", "");
+        }
+      } catch (error) {
+        /* 隐私模式下 localStorage 可能直接抛错，忽略即可 */
+      }
+      setTimeout(function () {
+        document.documentElement.removeAttribute("data-i18n-pending");
+      }, 1500);
+    })();
+  </script>
   <!-- 依赖全部本地化，提前并行拉取首屏必需的 pdf-lib 与 JSZip -->
   <link rel="modulepreload" href="./vendor/pdf-lib.min.mjs" />
   <link rel="modulepreload" href="./vendor/jszip.min.mjs" />
@@ -78,6 +101,7 @@
         <a href="#privacy">隐私说明</a>
         <a href="#faq">常见问题</a>
       </nav>
+      <select id="lang-select" class="lang-select" aria-label="选择语言"></select>
       <button class="header-cta" type="button" data-open-tool="merge">开始处理</button>
     </div>
   </header>

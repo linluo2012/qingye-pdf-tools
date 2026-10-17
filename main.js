@@ -1,6 +1,7 @@
 import { TOOLS, valueOf } from "./lib/registry.js";
 import { formatBytes, escapeHtml, baseName, openWithPdfJs, renderPageToCanvas, releaseCanvas } from "./lib/pdf-core.js";
 import { loadPdfJs } from "./lib/deps.js";
+import { LANGS, initLanguage, setLanguage, currentLang, applyFresh, tOr, tpl, tplSrc, setText } from "./lib/i18n.js";
 
 const dialog = document.querySelector("#tool-dialog");
 const readerDialog = document.querySelector("#reader-dialog");
@@ -110,14 +111,14 @@ function setProgress(value, text) {
   els.progressWrap.hidden = false;
   els.progressBar.style.width = `${safe}%`;
   els.progressValue.textContent = `${safe}%`;
-  els.progressText.textContent = text;
+  setText(els.progressText, text);
 }
 
 function resetProgress() {
   els.progressWrap.hidden = true;
   els.progressBar.style.width = "0%";
   els.progressValue.textContent = "0%";
-  els.progressText.textContent = "准备处理";
+  setText(els.progressText, "准备处理");
 }
 
 function cleanupUrls() {
@@ -128,7 +129,7 @@ function cleanupUrls() {
 let toastTimer;
 function showToast(message, isError = false) {
   clearTimeout(toastTimer);
-  els.toast.textContent = message;
+  setText(els.toast, message);
   els.toast.style.background = isError ? "#8f2e1a" : "#1d211f";
   els.toast.classList.add("visible");
   toastTimer = setTimeout(() => els.toast.classList.remove("visible"), 3800);
@@ -143,14 +144,33 @@ function showResult(result) {
   }
   const url = URL.createObjectURL(result.blob);
   state.resultUrls.push(url);
+  // 用 setText 而不是把译文拼进 innerHTML：拼接进去的英文会被当成原文缓存，
+  // 之后切语言就翻不动了。setText 会把中文模板和变量记在元素上，随切随算。
   els.resultBox.innerHTML = `
-    <strong>${escapeHtml(result.label || "文件")}已准备好</strong>
-    <p>${escapeHtml(result.summary)} 大小 ${formatBytes(result.blob.size)}。</p>
-    <a href="${url}" download="${escapeHtml(result.filename)}">下载 ${escapeHtml(result.filename)}</a>`;
+    <strong data-r="label"></strong>
+    <p data-r="summary"></p>
+    <a data-r="link" href="${url}" download="${escapeHtml(result.filename)}"></a>`;
+  setText(
+    els.resultBox.querySelector('[data-r="label"]'),
+    tplSrc("{label}已准备好", { label: result.label || "文件" }),
+  );
+  setText(
+    els.resultBox.querySelector('[data-r="summary"]'),
+    tplSrc("{summary} 大小 {size}。", { summary: result.summary, size: formatBytes(result.blob.size) }),
+  );
+  setText(
+    els.resultBox.querySelector('[data-r="link"]'),
+    tplSrc("下载 {filename}", { filename: result.filename }),
+  );
   els.resultBox.hidden = false;
   els.resultBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+/**
+ * 把报错归类成一句人话，返回中文原文。
+ * 只做归类不翻译 —— 翻译统一由调用方 tOr() 处理，这样同一条分类
+ * 在 8 种语言下都能复用，词典里也只需要收录这几句。
+ */
 function normalizeError(error) {
   if (error?.code === "PASSWORD_REQUIRED") return "这个 PDF 已加密，请在下方填入密码后重试。";
   const message = String(error?.message || error);
@@ -194,6 +214,9 @@ function openTool(key) {
   els.resultBox.hidden = true;
   applyConditionalFields();
   renderFiles();
+  // 弹窗里的标题、说明、按钮、选项都是 JS 赋的中文，节点复用但内容换了，
+  // 必须用 applyFresh 清掉缓存的原文再翻译，否则会拿上一把工具的中文去查词典。
+  applyFresh(dialog);
   dialog.showModal();
   document.body.style.overflow = "hidden";
 }
@@ -312,6 +335,7 @@ async function buildPageWorkspace() {
   const file = state.files[0];
   els.workspace.hidden = false;
   els.workspace.innerHTML = `<div class="workspace-loading">正在生成页面缩略图…</div>`;
+  applyFresh(els.workspace);
   try {
     const { doc, task } = await openWithPdfJs(file);
     const total = doc.numPages;
@@ -322,7 +346,7 @@ async function buildPageWorkspace() {
     grid.className = "page-grid";
     els.workspace.innerHTML = `
       <div class="workspace-head">
-        <strong>页面顺序（共 ${total} 页${total > limit ? `，仅显示前 ${limit} 页缩略图` : ""}）</strong>
+        <strong data-r="order"></strong>
         <span class="workspace-actions">
           <button type="button" data-ws="undo" disabled>撤销</button>
           <button type="button" data-ws="redo" disabled>重做</button>
@@ -330,6 +354,12 @@ async function buildPageWorkspace() {
           <button type="button" data-ws="restore">重置</button>
         </span>
       </div>`;
+    setText(
+      els.workspace.querySelector('[data-r="order"]'),
+      total > limit
+        ? tplSrc("页面顺序（共 {total} 页，仅显示前 {limit} 页缩略图）", { total, limit })
+        : tplSrc("页面顺序（共 {total} 页）", { total }),
+    );
     const host = document.createElement("div");
     host.className = "page-grid";
     els.workspace.append(host);
@@ -348,6 +378,7 @@ async function buildPageWorkspace() {
         return undefined;
       });
     });
+    applyFresh(els.workspace);
 
     const thumbs = new Map();
     for (let i = 0; i < limit; i += 1) {
@@ -360,7 +391,7 @@ async function buildPageWorkspace() {
     state.pageThumbs = thumbs;
     renderPageGrid(thumbs);
   } catch (error) {
-    els.workspace.innerHTML = `<div class="workspace-error">${escapeHtml(normalizeError(error))}</div>`;
+    els.workspace.innerHTML = `<div class="workspace-error">${escapeHtml(tOr(normalizeError(error)))}</div>`;
   }
 }
 
@@ -374,7 +405,9 @@ function renderPageGrid(thumbs = new Map()) {
     cell.draggable = !item.removed;
     const src = thumbs.get(item.index);
     cell.innerHTML = `
-      <div class="page-thumb">${src ? `<img src="${src}" alt="第 ${item.index + 1} 页" />` : `<span class="page-thumb-fallback">第 ${item.index + 1} 页</span>`}</div>
+      <div class="page-thumb">${src
+          ? `<img src="${src}" alt="${escapeHtml(tpl("第 {n} 页", { n: item.index + 1 }))}" />`
+          : `<span class="page-thumb-fallback">${escapeHtml(tpl("第 {n} 页", { n: item.index + 1 }))}</span>`}</div>
       <div class="page-cell-bar">
         <span>${position + 1}<small>原 ${item.index + 1}</small></span>
         <span class="page-cell-actions">
@@ -422,7 +455,8 @@ function renderPageGrid(thumbs = new Map()) {
     counter.className = "workspace-remaining";
     els.workspace.querySelector(".workspace-head")?.append(counter);
   }
-  counter.textContent = `将输出 ${remaining} 页`;
+  setText(counter, tplSrc("将输出 {n} 页", { n: remaining }));
+  applyFresh(host);
 }
 
 /* ------------------------------------------------------------ 预览阅读器 */
@@ -446,10 +480,10 @@ async function openReader(file) {
     reader.fitScale = 1;
     document.querySelector("#reader-total").textContent = String(doc.numPages);
     document.querySelector("#reader-page-input").max = String(doc.numPages);
-    document.querySelector("#reader-meta").textContent = `${formatBytes(file.size)} · ${doc.numPages} 页`;
+    setText(document.querySelector("#reader-meta"), tplSrc("{size} · {n} 页", { size: formatBytes(file.size), n: doc.numPages }));
     await renderReaderPage();
   } catch (error) {
-    document.querySelector("#reader-meta").textContent = normalizeError(error);
+    document.querySelector("#reader-meta").textContent = tOr(normalizeError(error));
   }
 }
 
@@ -489,7 +523,7 @@ async function renderReaderPage() {
       }
     } while (reader.pendingRender);
   } catch (error) {
-    showToast(normalizeError(error), true);
+    showToast(tOr(normalizeError(error)), true);
   } finally {
     reader.rendering = false;
   }
@@ -536,7 +570,7 @@ async function process() {
   } catch (error) {
     console.error(error);
     resetProgress();
-    showToast(normalizeError(error), true);
+    showToast(tOr(normalizeError(error)), true);
   } finally {
     state.busy = false;
     els.processButton.disabled = state.files.length < tool.minFiles;
@@ -674,4 +708,35 @@ if (landingTool && TOOLS[landingTool]) {
   if (headerCta) headerCta.dataset.openTool = landingTool;
 }
 
-window.__qingye = { openTool, state, TOOLS, loadPdfJs, baseName };
+/* ------------------------------------------------------------ 语言 */
+
+const langSelect = document.querySelector("#lang-select");
+if (langSelect) {
+  LANGS.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.code;
+    option.textContent = item.label;
+    // 语言名本来就是它自己的写法（日本語 / Español），不能被翻译掉
+    option.dataset.noI18n = "";
+    langSelect.append(option);
+  });
+  // 整个下拉都不参与遍历翻译，否则选中项会被替换成中文
+  langSelect.dataset.noI18n = "";
+  langSelect.value = currentLang();
+  langSelect.addEventListener("change", async () => {
+    // setLanguage 内部已经对整篇文档做过一遍翻译，这里不要再调 applyFresh：
+    // 那会把刚翻好的英文当成「原文」重新缓存，再切语言就全乱了。
+    await setLanguage(langSelect.value, (code) => {
+      langSelect.value = code;
+    });
+  });
+}
+
+// 先渲染中文页面，识别完再切 —— 不能让用户对着白屏等 IP 探测返回
+initLanguage((code) => {
+  if (langSelect) langSelect.value = code;
+  // 翻译落地了，放开正文（index.html 里还有一个 1.5 秒的兜底）
+  document.documentElement.removeAttribute("data-i18n-pending");
+});
+
+window.__qingye = { openTool, state, TOOLS, loadPdfJs, baseName, setLanguage, currentLang };
